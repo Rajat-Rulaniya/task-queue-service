@@ -84,6 +84,8 @@ services:
       - "3000:3000"
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./Observability/grafana/provisioning:/etc/grafana/provisioning
+      - ./Observability/grafana/provisioning/dashboards:/var/lib/grafana/dashboards
     environment:
       - GF_SERVER_ROOT_URL=http://craon.rajatrulaniya.com/grafana/
       - GF_SERVER_SERVE_FROM_SUB_PATH=true
