@@ -68,5 +68,31 @@ services:
     volumes:
       - .:/app
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./Observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.external-url=http://craon.rajatrulaniya.com/prometheus"
+      - "--web.route-prefix=/Prometheus"
+
+  grafana:
+    image: grafana/grafana-enterprise
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SERVER_ROOT_URL=http://craon.rajatrulaniya.com/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+
 volumes:
   mongodb_data:
+  prometheus_data:
+  grafana_data:
