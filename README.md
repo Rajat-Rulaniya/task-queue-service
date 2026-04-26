@@ -39,6 +39,16 @@ The Nginx configuration plays a critical role in the deployment by routing traff
 - **Grafana (`/grafana/`)**: Proxies visualization dashboard traffic to the Grafana container on port `3000`.
 - Both `/prometheus` and `/grafana` paths include exact-match redirects to ensure trailing slashes are appended properly, facilitating correct relative path resolution for the UIs.
 
+### Architecture Diagrams
+
+#### Deployment & Request Routing
+![Deployment & Request Routing](./Deployment%20&%20Request%20Routing.png)
+*Shows how external requests flow securely through AWS to our Nginx reverse proxy and into the containerized backend.*
+
+#### Job Processing & Observability
+![Job Processing & Observability](./Job%20Processing%20&%20Observability.png)
+*Illustrates the internal task queue lifecycle and how the observability stack captures real-time system metrics.*
+
 
 ---
 
@@ -57,6 +67,8 @@ The Nginx configuration plays a critical role in the deployment by routing traff
   1. `test_and_lint`: Runs Ruff linter and tests.
   2. `build_and_push`: Builds Docker image and pushes to Docker Hub registry.
   3. `deploy_to_EC2`: Pulls the latest image via SSH and restarts the `docker-compose` stack on the EC2 instance.
+  
+  **Continuous Deployment:** Whenever a developer commits code directly to `main` or merges a branch into `main`, this pipeline is automatically triggered. The live application is updated seamlessly with zero manual intervention required.
 
 ### Part 3: Observability
 - **Prometheus**: Exposed `/metrics` via `prometheus-fastapi-instrumentator`. Set up via Docker Compose with persistent volumes. Explicitly tracks:
