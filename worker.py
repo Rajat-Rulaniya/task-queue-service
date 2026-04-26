@@ -4,8 +4,6 @@ Celery worker script
 Run with: celery -A worker worker --loglevel=info -c 4
 """
 
-import sys
-import os
 import asyncio
 from celery_app import celery_app
 from tasks import parse_csv_task, send_email_task, process_data_task

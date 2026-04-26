@@ -1,5 +1,4 @@
 import asyncio
-import time
 from celery import shared_task
 from celery.exceptions import SoftTimeLimitExceeded
 from beanie import PydanticObjectId

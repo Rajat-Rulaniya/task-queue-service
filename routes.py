@@ -6,7 +6,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 from models import Job, JobStatus
-from schemas import JobCreateRequest, JobResponse, JobListResponse, JobStatusResponse
+from schemas import JobCreateRequest, JobResponse, JobListResponse
 from tasks import parse_csv_task, send_email_task, process_data_task
 from config import settings
 

@@ -4,7 +4,6 @@ from contextlib import asynccontextmanager
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from config import settings
-from celery_app import celery_app
 from database import init_db, close_db
 from routes import router, limiter
 from slowapi.errors import RateLimitExceeded
