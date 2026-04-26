@@ -10,9 +10,14 @@ from slowapi.errors import RateLimitExceeded
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 import asyncio
+import time
+import uuid
+from fastapi import Request
+import structlog
 from datetime import datetime
 from models import Job, JobStatus
 from metrics import JOBS_COMPLETED, JOB_DURATION, QUEUE_DEPTH
+from logger import setup_logging, get_logger
 
 # Store db client in app state
 db_client: AsyncIOMotorClient = None
@@ -77,6 +82,33 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+setup_logging()
+logger = get_logger("fastapi")
+
+@app.middleware("http")
+async def logging_middleware(request: Request, call_next):
+    request_id = str(uuid.uuid4())
+    user_id = request.headers.get("X-User-ID", "anonymous")
+    
+    structlog.contextvars.clear_contextvars()
+    structlog.contextvars.bind_contextvars(
+        request_id=request_id,
+        user_id=user_id,
+        path=request.url.path,
+        method=request.method
+    )
+    
+    start_time = time.time()
+    try:
+        response = await call_next(request)
+        duration = round(time.time() - start_time, 4)
+        logger.info("Request processed", duration=duration, status=response.status_code)
+        return response
+    except Exception as e:
+        duration = round(time.time() - start_time, 4)
+        logger.error("Request failed", duration=duration, status=500, error=str(e))
+        raise
 
 # Add state limiter
 app.state.limiter = limiter

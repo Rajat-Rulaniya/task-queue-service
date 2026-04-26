@@ -9,11 +9,13 @@ from celery_app import celery_app
 from tasks import parse_csv_task, send_email_task, process_data_task
 from database import init_db
 from celery.signals import worker_process_init
+from logger import setup_logging
 
 
 @worker_process_init.connect
 def init_worker(**kwargs):
     """Initialize database connection for each worker process"""
+    setup_logging()
     print("Initializing database for worker process...")
     loop = asyncio.get_event_loop()
     loop.run_until_complete(init_db())

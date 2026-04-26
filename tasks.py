@@ -6,6 +6,9 @@ from models import Job, JobStatus
 import csv
 import io
 from datetime import datetime
+import structlog
+
+logger = structlog.get_logger("tasks")
 
 
 @shared_task(
@@ -45,6 +48,16 @@ async def _parse_csv_async(job_id: str, payload: dict):
     job_doc = await Job.get(PydanticObjectId(job_id))
     
     try:
+        meta = payload.get("_meta", {})
+        structlog.contextvars.clear_contextvars()
+        structlog.contextvars.bind_contextvars(
+            request_id=meta.get("request_id", "unknown"),
+            user_id=meta.get("user_id", "unknown"),
+            job_id=job_id,
+            task_type="parse_csv"
+        )
+        logger.info("Task started", status="processing")
+        
         job_doc.status = JobStatus.PROCESSING
         job_doc.started_at = datetime.utcnow()
         await job_doc.save()
@@ -68,6 +81,9 @@ async def _parse_csv_async(job_id: str, payload: dict):
         job_doc.completed_at = datetime.utcnow()
         await job_doc.save()
         
+        duration = round((job_doc.completed_at - job_doc.started_at).total_seconds(), 4) if job_doc.started_at else 0
+        logger.info("Task completed", duration=duration, status="completed")
+        
         return {"status": "success", "rows_processed": len(rows)}
         
     except Exception as e:
@@ -76,6 +92,9 @@ async def _parse_csv_async(job_id: str, payload: dict):
         job_doc.retries += 1
         job_doc.completed_at = datetime.utcnow()
         await job_doc.save()
+        
+        duration = round((job_doc.completed_at - job_doc.started_at).total_seconds(), 4) if job_doc.started_at else 0
+        logger.error("Task failed", duration=duration, status="failed", error=str(e))
         
         raise
 
@@ -114,6 +133,16 @@ async def _send_email_async(job_id: str, payload: dict):
     job_doc = await Job.get(PydanticObjectId(job_id))
     
     try:
+        meta = payload.get("_meta", {})
+        structlog.contextvars.clear_contextvars()
+        structlog.contextvars.bind_contextvars(
+            request_id=meta.get("request_id", "unknown"),
+            user_id=meta.get("user_id", "unknown"),
+            job_id=job_id,
+            task_type="send_email"
+        )
+        logger.info("Task started", status="processing")
+        
         job_doc.status = JobStatus.PROCESSING
         job_doc.started_at = datetime.utcnow()
         await job_doc.save()
@@ -139,6 +168,9 @@ async def _send_email_async(job_id: str, payload: dict):
         job_doc.completed_at = datetime.utcnow()
         await job_doc.save()
         
+        duration = round((job_doc.completed_at - job_doc.started_at).total_seconds(), 4) if job_doc.started_at else 0
+        logger.info("Task completed", duration=duration, status="completed")
+        
         return {"status": "success", "email_sent": True}
         
     except Exception as e:
@@ -147,6 +179,9 @@ async def _send_email_async(job_id: str, payload: dict):
         job_doc.retries += 1
         job_doc.completed_at = datetime.utcnow()
         await job_doc.save()
+        
+        duration = round((job_doc.completed_at - job_doc.started_at).total_seconds(), 4) if job_doc.started_at else 0
+        logger.error("Task failed", duration=duration, status="failed", error=str(e))
         
         raise
 
@@ -185,6 +220,16 @@ async def _process_data_async(job_id: str, payload: dict):
     job_doc = await Job.get(PydanticObjectId(job_id))
     
     try:
+        meta = payload.get("_meta", {})
+        structlog.contextvars.clear_contextvars()
+        structlog.contextvars.bind_contextvars(
+            request_id=meta.get("request_id", "unknown"),
+            user_id=meta.get("user_id", "unknown"),
+            job_id=job_id,
+            task_type="process_data"
+        )
+        logger.info("Task started", status="processing")
+        
         job_doc.status = JobStatus.PROCESSING
         job_doc.started_at = datetime.utcnow()
         await job_doc.save()
@@ -204,6 +249,9 @@ async def _process_data_async(job_id: str, payload: dict):
         job_doc.completed_at = datetime.utcnow()
         await job_doc.save()
         
+        duration = round((job_doc.completed_at - job_doc.started_at).total_seconds(), 4) if job_doc.started_at else 0
+        logger.info("Task completed", duration=duration, status="completed")
+        
         return {"status": "success", "processed": True}
         
     except Exception as e:
@@ -212,5 +260,8 @@ async def _process_data_async(job_id: str, payload: dict):
         job_doc.retries += 1
         job_doc.completed_at = datetime.utcnow()
         await job_doc.save()
+        
+        duration = round((job_doc.completed_at - job_doc.started_at).total_seconds(), 4) if job_doc.started_at else 0
+        logger.error("Task failed", duration=duration, status="failed", error=str(e))
         
         raise

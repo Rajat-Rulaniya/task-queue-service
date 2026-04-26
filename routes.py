@@ -10,6 +10,9 @@ from schemas import JobCreateRequest, JobResponse, JobListResponse
 from tasks import parse_csv_task, send_email_task, process_data_task
 from config import settings
 from metrics import JOBS_ENQUEUED
+import structlog
+
+logger = structlog.get_logger("routes")
 
 router = APIRouter()
 
@@ -39,6 +42,13 @@ async def create_job(request: Request, job_create: JobCreateRequest):
                 detail=f"Invalid task_type. Must be one of: {', '.join(valid_tasks)}"
             )
         
+        # Inject request context into payload so Celery workers can log it
+        ctx = structlog.contextvars.get_contextvars()
+        job_create.payload["_meta"] = {
+            "request_id": ctx.get("request_id", "unknown"),
+            "user_id": ctx.get("user_id", "unknown")
+        }
+        
         # Create job document in MongoDB
         job = Job(
             task_id="",  # Will be set after task creation
@@ -47,6 +57,11 @@ async def create_job(request: Request, job_create: JobCreateRequest):
             payload=job_create.payload,
         )
         await job.save()
+        
+        # Bind job_id to current request context for logs
+        structlog.contextvars.bind_contextvars(job_id=str(job.id))
+        
+        logger.info("Enqueuing job", task_type=job_create.task_type)
         
         # Enqueue task based on type
         if job_create.task_type == "parse_csv":
