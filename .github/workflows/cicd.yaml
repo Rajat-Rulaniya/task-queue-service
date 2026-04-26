@@ -52,3 +52,21 @@ jobs:
             rajatrulaniya/craon-backend:${{ github.run_number }}
             rajatrulaniya/craon-backend:latest
 
+  deploy_to_EC2:
+    runs-on: ubuntu-latest
+    needs: build_and_push
+
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            git clone https://github.com/${{ github.repository }} || echo "NOTHING TO CLONE..."
+            cd task-queue-service
+            git checkout main
+            git pull origin main
+            docker compose pull
+            docker compose up -d
