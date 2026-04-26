@@ -77,9 +77,6 @@ async def _parse_csv_async(job_id: str, payload: dict):
         job_doc.completed_at = datetime.utcnow()
         await job_doc.save()
         
-        if job_doc.retries >= 3:
-            QUEUE_DEPTH.dec()
-            
         raise
 
 
@@ -151,9 +148,6 @@ async def _send_email_async(job_id: str, payload: dict):
         job_doc.completed_at = datetime.utcnow()
         await job_doc.save()
         
-        if job_doc.retries >= 3:
-            QUEUE_DEPTH.dec()
-            
         raise
 
 
@@ -219,7 +213,4 @@ async def _process_data_async(job_id: str, payload: dict):
         job_doc.completed_at = datetime.utcnow()
         await job_doc.save()
         
-        if job_doc.retries >= 3:
-            QUEUE_DEPTH.dec()
-            
         raise

@@ -9,7 +9,7 @@ from models import Job, JobStatus
 from schemas import JobCreateRequest, JobResponse, JobListResponse
 from tasks import parse_csv_task, send_email_task, process_data_task
 from config import settings
-from metrics import JOBS_ENQUEUED, QUEUE_DEPTH
+from metrics import JOBS_ENQUEUED
 
 router = APIRouter()
 
