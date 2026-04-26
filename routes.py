@@ -71,7 +71,6 @@ async def create_job(request: Request, job_create: JobCreateRequest):
         
         # Update metrics
         JOBS_ENQUEUED.inc()
-        QUEUE_DEPTH.inc()
         
         return {
             "id": str(job.id),

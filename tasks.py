@@ -6,7 +6,6 @@ from models import Job, JobStatus
 import csv
 import io
 from datetime import datetime
-from metrics import JOBS_COMPLETED, JOB_DURATION, QUEUE_DEPTH
 
 
 @shared_task(
@@ -68,13 +67,6 @@ async def _parse_csv_async(job_id: str, payload: dict):
         job_doc.status = JobStatus.COMPLETED
         job_doc.completed_at = datetime.utcnow()
         await job_doc.save()
-        
-        # Update metrics
-        JOBS_COMPLETED.inc()
-        QUEUE_DEPTH.dec()
-        if job_doc.started_at:
-            duration = (job_doc.completed_at - job_doc.started_at).total_seconds()
-            JOB_DURATION.observe(duration)
         
         return {"status": "success", "rows_processed": len(rows)}
         
@@ -150,13 +142,6 @@ async def _send_email_async(job_id: str, payload: dict):
         job_doc.completed_at = datetime.utcnow()
         await job_doc.save()
         
-        # Update metrics
-        JOBS_COMPLETED.inc()
-        QUEUE_DEPTH.dec()
-        if job_doc.started_at:
-            duration = (job_doc.completed_at - job_doc.started_at).total_seconds()
-            JOB_DURATION.observe(duration)
-        
         return {"status": "success", "email_sent": True}
         
     except Exception as e:
@@ -224,13 +209,6 @@ async def _process_data_async(job_id: str, payload: dict):
         job_doc.status = JobStatus.COMPLETED
         job_doc.completed_at = datetime.utcnow()
         await job_doc.save()
-        
-        # Update metrics
-        JOBS_COMPLETED.inc()
-        QUEUE_DEPTH.dec()
-        if job_doc.started_at:
-            duration = (job_doc.completed_at - job_doc.started_at).total_seconds()
-            JOB_DURATION.observe(duration)
         
         return {"status": "success", "processed": True}
         

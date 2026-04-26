@@ -9,9 +9,42 @@ from routes import router, limiter
 from slowapi.errors import RateLimitExceeded
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
+import asyncio
+from datetime import datetime
+from models import Job, JobStatus
+from metrics import JOBS_COMPLETED, JOB_DURATION, QUEUE_DEPTH
 
 # Store db client in app state
 db_client: AsyncIOMotorClient = None
+
+async def metrics_poller():
+    last_checked_time = datetime.utcnow()
+    while True:
+        try:
+            await asyncio.sleep(2)
+            
+            # 1. Update Queue Depth
+            pending = await Job.find({"status": JobStatus.PENDING}).count()
+            processing = await Job.find({"status": JobStatus.PROCESSING}).count()
+            QUEUE_DEPTH.set(pending + processing)
+            
+            # 2. Find newly completed jobs
+            newly_completed = await Job.find(
+                {"status": JobStatus.COMPLETED, "completed_at": {"$gt": last_checked_time}}
+            ).to_list()
+            
+            for job in newly_completed:
+                JOBS_COMPLETED.inc()
+                if job.started_at and job.completed_at:
+                    duration = (job.completed_at - job.started_at).total_seconds()
+                    JOB_DURATION.observe(duration)
+                
+                if job.completed_at > last_checked_time:
+                    last_checked_time = job.completed_at
+
+        except Exception as e:
+            print(f"Metrics poller error: {e}")
+
 
 
 @asynccontextmanager
@@ -23,11 +56,16 @@ async def lifespan(app: FastAPI):
     global db_client
     db_client = await init_db()
     print("✓ MongoDB initialized")
+    
+    # Start metrics poller
+    poller_task = asyncio.create_task(metrics_poller())
+    
     print("✓ Application startup complete")
     
     yield
     
     # Shutdown
+    poller_task.cancel()
     await close_db(db_client)
     print("✓ Application shutdown complete")
 
