@@ -64,7 +64,5 @@ Thumbs.db
 .dockerignore
 docker-compose.override.yml
 
-
-*.md
 *.pdf
 *.pem
