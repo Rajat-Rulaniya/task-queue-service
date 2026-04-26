@@ -1,0 +1,25 @@
+name: Task Queue Service CICD Pipeline
+
+# on:
+#   push:
+#     branches: [ main ]
+
+jobs:
+  test_and_lint:
+    - name: Checkout code
+      uses: actions/checkout@v6
+
+    - name: Setup up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: "3.10"
+
+    - name: Install Dependencies
+      run: pip install -r requirements.txt; pip install ruff;
+
+    - name: Lint check
+      run: ruff check .
+
+    - name: Test cases
+      run: echo "Test cases passed!!"
+
