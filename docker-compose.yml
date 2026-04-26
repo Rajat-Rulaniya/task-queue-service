@@ -75,7 +75,7 @@ services:
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--web.external-url=http://craon.rajatrulaniya.com/prometheus"
-      - "--web.route-prefix=/Prometheus"
+      - "--web.route-prefix=/prometheus"
 
   grafana:
     image: grafana/grafana-enterprise
