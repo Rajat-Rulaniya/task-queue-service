@@ -8,6 +8,7 @@ from database import init_db, close_db
 from routes import router, limiter
 from slowapi.errors import RateLimitExceeded
 from fastapi.responses import JSONResponse
+from prometheus_fastapi_instrumentator import Instrumentator
 
 # Store db client in app state
 db_client: AsyncIOMotorClient = None
@@ -63,6 +64,9 @@ async def rate_limit_handler(request, exc):
 
 # Include routes
 app.include_router(router, prefix="/api/v1", tags=["jobs"])
+
+# Instrument and expose prometheus metrics
+Instrumentator().instrument(app).expose(app)
 
 
 @app.get("/")

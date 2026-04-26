@@ -6,6 +6,7 @@ from models import Job, JobStatus
 import csv
 import io
 from datetime import datetime
+from metrics import JOBS_COMPLETED, JOB_DURATION, QUEUE_DEPTH
 
 
 @shared_task(
@@ -68,6 +69,13 @@ async def _parse_csv_async(job_id: str, payload: dict):
         job_doc.completed_at = datetime.utcnow()
         await job_doc.save()
         
+        # Update metrics
+        JOBS_COMPLETED.inc()
+        QUEUE_DEPTH.dec()
+        if job_doc.started_at:
+            duration = (job_doc.completed_at - job_doc.started_at).total_seconds()
+            JOB_DURATION.observe(duration)
+        
         return {"status": "success", "rows_processed": len(rows)}
         
     except Exception as e:
@@ -76,6 +84,10 @@ async def _parse_csv_async(job_id: str, payload: dict):
         job_doc.retries += 1
         job_doc.completed_at = datetime.utcnow()
         await job_doc.save()
+        
+        if job_doc.retries >= 3:
+            QUEUE_DEPTH.dec()
+            
         raise
 
 
@@ -138,6 +150,13 @@ async def _send_email_async(job_id: str, payload: dict):
         job_doc.completed_at = datetime.utcnow()
         await job_doc.save()
         
+        # Update metrics
+        JOBS_COMPLETED.inc()
+        QUEUE_DEPTH.dec()
+        if job_doc.started_at:
+            duration = (job_doc.completed_at - job_doc.started_at).total_seconds()
+            JOB_DURATION.observe(duration)
+        
         return {"status": "success", "email_sent": True}
         
     except Exception as e:
@@ -146,6 +165,10 @@ async def _send_email_async(job_id: str, payload: dict):
         job_doc.retries += 1
         job_doc.completed_at = datetime.utcnow()
         await job_doc.save()
+        
+        if job_doc.retries >= 3:
+            QUEUE_DEPTH.dec()
+            
         raise
 
 
@@ -202,6 +225,13 @@ async def _process_data_async(job_id: str, payload: dict):
         job_doc.completed_at = datetime.utcnow()
         await job_doc.save()
         
+        # Update metrics
+        JOBS_COMPLETED.inc()
+        QUEUE_DEPTH.dec()
+        if job_doc.started_at:
+            duration = (job_doc.completed_at - job_doc.started_at).total_seconds()
+            JOB_DURATION.observe(duration)
+        
         return {"status": "success", "processed": True}
         
     except Exception as e:
@@ -210,4 +240,8 @@ async def _process_data_async(job_id: str, payload: dict):
         job_doc.retries += 1
         job_doc.completed_at = datetime.utcnow()
         await job_doc.save()
+        
+        if job_doc.retries >= 3:
+            QUEUE_DEPTH.dec()
+            
         raise

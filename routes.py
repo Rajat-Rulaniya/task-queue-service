@@ -9,6 +9,7 @@ from models import Job, JobStatus
 from schemas import JobCreateRequest, JobResponse, JobListResponse
 from tasks import parse_csv_task, send_email_task, process_data_task
 from config import settings
+from metrics import JOBS_ENQUEUED, QUEUE_DEPTH
 
 router = APIRouter()
 
@@ -67,6 +68,10 @@ async def create_job(request: Request, job_create: JobCreateRequest):
         # Update job with Celery task ID
         job.task_id = celery_task.id
         await job.save()
+        
+        # Update metrics
+        JOBS_ENQUEUED.inc()
+        QUEUE_DEPTH.inc()
         
         return {
             "id": str(job.id),
